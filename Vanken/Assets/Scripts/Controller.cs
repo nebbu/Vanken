@@ -7,15 +7,17 @@ public class Controller : MonoBehaviour
     public float dirX, dirY, movespeed, jumpspeed, MaxVelocity;
     Rigidbody2D rb;
     Animator anim;
-    float TapTime;
-    bool tapping;
-    float TimeSinceLastTap;
+    public float TapTime;
+    public bool tapping;
+    public float TimeSinceLastTap;
     public delegate void printing();
     public static event printing printer;
     // Use this for initializat ion
-    bool isDoubleTapping;
-    DoubleTapDirection theDirection;
-    enum DoubleTapDirection
+    public bool isDoubleTapping;
+    [SerializeField]
+    public DoubleTapDirection firstDirection;
+    public DoubleTapDirection doubleTapDirection;
+    public enum DoubleTapDirection
     {
         Right,
         Left
@@ -27,7 +29,7 @@ public class Controller : MonoBehaviour
         jumpspeed = 10f;
         rb = GetComponent<Rigidbody2D>();
         rb.drag = 10;
-        TapTime = 2f;
+        TapTime = 0.5f; 
     }
 
     // Update is called once per frame
@@ -56,49 +58,74 @@ public class Controller : MonoBehaviour
     }
     void Inputs()
     {
-        if (Input.GetKeyDown("d") || Input.GetKeyDown("a"))
+
+        bool tapDownDKey = Input.GetKeyDown("d");
+        bool tapDownAKey = Input.GetKeyDown("a");
+        
+        bool holdDownDKey = Input.GetKey("d");
+        bool holdDownAKey = Input.GetKey("a");
+
+        if (tapDownDKey || tapDownAKey)
         {
 
             if (!tapping)
             {
                 tapping = true;
 
+                if (tapDownDKey)
+                {
+                    firstDirection = DoubleTapDirection.Right;
+                }else if (tapDownAKey)
+                {  
+                    firstDirection = DoubleTapDirection.Left;
+                }
+                TimeSinceLastTap = Time.time;
             }
-            if ((Time.time - TimeSinceLastTap) < TapTime)
+            else if ((Time.time - TimeSinceLastTap) < TapTime)
             {
                 Debug.Log("Dubble Tab");
                 tapping = false;
-                //StartCoroutine(DoubleTap());
-                isDoubleTapping = true;
-                if (Input.GetKey("d"))
+                if (tapDownDKey && firstDirection == DoubleTapDirection.Right)
                 {
-                    theDirection = DoubleTapDirection.Right;
-                }
-                if (Input.GetKey("a"))
-                {  //might need elif or else? Its saying ; expected after ("a")) if I use else
-                    theDirection = DoubleTapDirection.Left;
+                    isDoubleTapping = true;
+                    doubleTapDirection = DoubleTapDirection.Right;
+                }else if (tapDownAKey && firstDirection == DoubleTapDirection.Left)
+                {
+                    isDoubleTapping = true;
+                    doubleTapDirection = DoubleTapDirection.Left;
                 }
 
             }
-            TimeSinceLastTap = Time.time;
+
+        }else if(holdDownDKey || holdDownAKey)
+        {
 
         }
-        if (theDirection == DoubleTapDirection.Right && !Input.GetKey("d")) //Right and left unreachable?
+        else
+        {
+            if ((Time.time - TimeSinceLastTap) > TapTime)
+            {
+                tapping = false;
+            }
+        }
+
+        if (doubleTapDirection == DoubleTapDirection.Right && !holdDownDKey) //Right and left unreachable?
         {
             isDoubleTapping = false;
         }
-        if (theDirection == DoubleTapDirection.Left && !Input.GetKey("a"))
+        if (doubleTapDirection == DoubleTapDirection.Left && !holdDownAKey)
         {
             isDoubleTapping = false;
         }
+
         if (isDoubleTapping == true)
         {
             movespeed = 5f;
-        }
-        if (isDoubleTapping == false)
+        }else if (isDoubleTapping == false)
         {
             movespeed = 1f;
         }
+
         dirX = Input.GetAxisRaw("Horizontal");
         dirY = Input.GetAxisRaw("Vertical");
 
